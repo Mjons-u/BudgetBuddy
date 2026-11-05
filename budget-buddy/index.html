@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudgetBuddy - Personal Budgeting & Financial Management</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#0e5b3f',
+              greenDark: '#0a4630',
+              greenLight: '#eaf6ee',
+              greenAccent: '#10b981',
+              orange: '#ea580c',
+              orangeLight: '#fff4ea',
+              blueLight: '#f0f7ff'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#f9fbf9] text-gray-800 antialiased min-h-screen">
+
+  <!-- ========================================== -->
+  <!-- PUBLIC COMMUNITY AUTHENTICATION            -->
+  <!-- ========================================== -->
+  <div id="authView" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#f9fbf9] via-[#edf7f2] to-[#f4fbf7]">
+    <div class="max-w-md w-full">
+      
+      <!-- Brand Logo Header -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-3 justify-center mb-2">
+          <div class="w-11 h-11 rounded-2xl bg-[#0e5b3f] flex items-center justify-center text-white font-extrabold text-2xl shadow-md">
+            B
+          </div>
+          <span class="font-extrabold text-2xl text-gray-900 tracking-tight">BudgetBuddy</span>
+        </div>
+        <p class="text-xs text-gray-500 font-medium">Smart personal budgeting, expense tracking & recommendations</p>
+      </div>
+
+      <!-- Main Auth Card -->
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+        
+        <!-- Tab Selector: Sign In vs Create Account -->
+        <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/70 p-1.5 gap-1.5 m-3 rounded-2xl">
+          <button id="authTabLogin" class="py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-gray-900 shadow-sm" type="button">
+            Sign In
+          </button>
+          <button id="authTabRegister" class="py-2.5 text-xs font-medium rounded-xl transition-all text-gray-500 hover:text-gray-900" type="button">
+            Create Account
+          </button>
+        </div>
+
+        <!-- Auth Error Banner -->
+        <div id="authErrorAlert" class="hidden mx-6 mt-2 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 leading-relaxed font-medium">
+          <!-- Dynamically populated error message -->
+        </div>
+
+        <!-- 1. SIGN IN FORM -->
+        <form id="loginForm" class="p-6 pt-3 space-y-4">
+          <div>
+            <label for="loginEmail" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email Address</label>
+            <input type="email" id="loginEmail" placeholder="your.email@example.com" required autocomplete="email" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="loginPassword" class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
+              <button type="button" id="toggleLoginPassword" class="text-[11px] text-[#0e5b3f] hover:underline font-medium">Show</button>
+            </div>
+            <div class="relative">
+              <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center gap-2 cursor-pointer text-gray-600">
+              <input type="checkbox" checked class="rounded text-[#0e5b3f] focus:ring-[#0e5b3f]">
+              <span>Keep me signed in</span>
+            </label>
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-[#0e5b3f] hover:bg-[#0a4630] text-white font-bold text-sm shadow-md transition-all active:scale-[0.99] mt-2">
+            Sign In
+          </button>
+        </form>
+
+        <!-- 2. CREATE ACCOUNT / REGISTER FORM -->
+        <form id="registerForm" class="hidden p-6 pt-3 space-y-4">
+          <div>
+            <label for="regName" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Full Name</label>
+            <input type="text" id="regName" placeholder="e.g. Maria Santos" required autocomplete="name" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+
+          <div>
+            <label for="regEmail" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email Address</label>
+            <input type="email" id="regEmail" placeholder="e.g. maria@example.com" required autocomplete="email" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="regPassword" class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Create Password</label>
+              <button type="button" id="toggleRegPassword" class="text-[11px] text-[#0e5b3f] hover:underline font-medium">Show</button>
+            </div>
+            <input type="password" id="regPassword" placeholder="Minimum 6 characters" minlength="6" required autocomplete="new-password" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="regCurrency" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Currency</label>
+              <select id="regCurrency" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20">
+                <option value="₱">₱ (PHP)</option>
+                <option value="$">$ (USD)</option>
+                <option value="€">€ (EUR)</option>
+                <option value="£">£ (GBP)</option>
+                <option value="¥">¥ (JPY)</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="regIncome" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Starting Allowance / Income</label>
+              <input type="number" id="regIncome" placeholder="e.g. 2000" step="50" min="0" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-[#0e5b3f] hover:bg-[#0a4630] text-white font-bold text-sm shadow-md transition-all active:scale-[0.99] mt-2">
+            Create Account & Get Started
+          </button>
+        </form>
+
+      </div>
+
+      <!-- Feature Badges -->
+      <div class="grid grid-cols-3 gap-2 mt-6 text-center text-[11px] text-gray-500">
+        <div class="bg-white/80 p-2.5 rounded-xl border border-gray-100 shadow-2xs">
+          <span class="block text-base mb-1">🛒</span>
+          <span class="font-semibold text-gray-700">Market Advice</span>
+        </div>
+        <div class="bg-white/80 p-2.5 rounded-xl border border-gray-100 shadow-2xs">
+          <span class="block text-base mb-1">📅</span>
+          <span class="font-semibold text-gray-700">Daily to Yearly</span>
+        </div>
+        <div class="bg-white/80 p-2.5 rounded-xl border border-gray-100 shadow-2xs">
+          <span class="block text-base mb-1">🔒</span>
+          <span class="font-semibold text-gray-700">100% Private</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MAIN APPLICATION SHELL                     -->
+  <!-- ========================================== -->
+  <div id="appContainer" class="hidden min-h-screen flex flex-col md:flex-row w-full">
+
+    <!-- Mobile Top Bar -->
+    <div class="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30 w-full">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-[#0e5b3f] flex items-center justify-center text-white font-bold text-lg">
+          B
+        </div>
+        <span class="font-extrabold text-xl text-gray-900 tracking-tight">BudgetBuddy</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="openAddTxBtnFromList" class="bg-[#0e5b3f] text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1">
+          <span>+ Add</span>
+        </button>
+        <button id="mobileMenuBtn" class="p-2 text-gray-600 rounded-lg hover:bg-gray-100">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Overlay Backdrop -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+    <!-- SIDEBAR NAVIGATION (Matching Screenshot) -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col justify-between z-40 transition-transform duration-300 transform -translate-x-full md:translate-x-0 h-screen md:h-auto">
+      <div class="p-6">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3 mb-9">
+          <div class="w-9 h-9 rounded-xl bg-[#0e5b3f] flex items-center justify-center text-white font-bold text-xl shadow-sm">
+            B
+          </div>
+          <span class="font-bold text-xl text-gray-900 tracking-tight">BudgetBuddy</span>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div>
+          <p class="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3 px-3">MENU</p>
+          <nav class="space-y-1.5">
+            <!-- 1. Dashboard -->
+            <a href="#dashboard" data-tab="dashboard" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold nav-item-active transition-all cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+              <span>Dashboard</span>
+            </a>
+
+            <!-- 2. Transactions -->
+            <a href="#transactions" data-tab="transactions" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium nav-item transition-all cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+              <span>Transactions</span>
+            </a>
+
+            <!-- 3. Budget Planner & Smart Recommendations -->
+            <a href="#budgetPlanner" data-tab="budgetPlanner" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium nav-item transition-all cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+              <span>Budget planner</span>
+            </a>
+
+            <!-- 4. Reports (Daily, Weekly, Monthly, Yearly) -->
+            <a href="#reports" data-tab="reports" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium nav-item transition-all cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              <span>Reports</span>
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- User Profile & Account Footer (Matching Screenshot) -->
+      <div class="p-5 border-t border-gray-100 bg-white">
+        <div class="flex items-center gap-3 mb-2.5 cursor-pointer group" id="editProfileBtn" title="Click to open Settings & Account">
+          <div id="sidebarUserAvatar" class="w-10 h-10 rounded-full bg-[#eaf6ee] text-[#0e5b3f] flex items-center justify-center font-bold text-sm flex-shrink-0 group-hover:ring-2 ring-emerald-500 transition-all">
+            U
+          </div>
+          <div class="overflow-hidden">
+            <p id="sidebarUserName" class="text-sm font-bold text-gray-900 truncate leading-tight">Account</p>
+            <p id="sidebarUserRole" class="text-xs text-gray-400 truncate">Personal account</p>
+          </div>
+        </div>
+
+        <!-- Matching Screenshot's "-> Log out" button -->
+        <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+          <button id="sidebarLogoutBtn" class="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-red-600 transition-colors py-1 group">
+            <svg class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <span>Log out</span>
+          </button>
+          
+          <button onclick="window.app.openProfileModal()" class="text-xs font-medium text-gray-400 hover:text-[#0e5b3f] transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto px-4 md:px-10 py-8 max-w-7xl mx-auto w-full">
+
+      <!-- 1. DASHBOARD VIEW (Pixel replica of screenshot) -->
+      <div id="dashboardView" class="space-y-6">
+        
+        <!-- Top Overview Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-gray-400 tracking-wider uppercase">OVERVIEW</span>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight mt-0.5">Your financial snapshot</h1>
+            <p class="text-sm text-gray-500 mt-1">Here's how your money is looking today.</p>
+          </div>
+
+          <button id="openAddTxBtn" class="inline-flex items-center justify-center gap-2 bg-[#0e5b3f] hover:bg-[#0a4630] text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition-all hover:shadow active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+            <span>Add transaction</span>
+          </button>
+        </div>
+
+        <!-- 4 Stat Summary Cards (Matching Screenshot) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Available balance -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm stat-card">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-500">Available balance</span>
+              <div class="w-8 h-8 rounded-full bg-[#0e5b3f] text-white flex items-center justify-center font-bold text-sm">
+                <span class="currency-symbol">₱</span>
+              </div>
+            </div>
+            <div id="cardAvailableBalance" class="text-2xl font-extrabold text-gray-900 tracking-tight">₱0.00</div>
+            <p class="text-[11px] text-gray-400 mt-2">All-time income minus expenses</p>
+          </div>
+
+          <!-- Card 2: Income this month -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm stat-card">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-500">Income this month</span>
+              <div class="w-8 h-8 rounded-full bg-[#eaf6ee] text-[#0e5b3f] flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17l9.2-9.2M17 17V8H8"></path></svg>
+              </div>
+            </div>
+            <div id="cardIncomeMonth" class="text-2xl font-extrabold text-gray-900 tracking-tight">₱0.00</div>
+            <p id="cardIncomeMonthSub" class="text-[11px] text-gray-400 mt-2">Current Month</p>
+          </div>
+
+          <!-- Card 3: Expenses this month -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm stat-card">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-500">Expenses this month</span>
+              <div class="w-8 h-8 rounded-full bg-[#fff4ea] text-[#ea580c] flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 7L7.8 16.2M7 7v9h9"></path></svg>
+              </div>
+            </div>
+            <div id="cardExpensesMonth" class="text-2xl font-extrabold text-gray-900 tracking-tight">₱0.00</div>
+            <p id="cardExpensesMonthSub" class="text-[11px] text-gray-400 mt-2">Current Month</p>
+          </div>
+
+          <!-- Card 4: Left this month -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm stat-card">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-500">Left this month</span>
+              <div class="w-8 h-8 rounded-full bg-[#f0f7ff] text-[#2563eb] flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+            </div>
+            <div id="cardLeftMonth" class="text-2xl font-extrabold text-gray-900 tracking-tight">₱0.00</div>
+            <p class="text-[11px] text-gray-400 mt-2">Monthly income less expenses</p>
+          </div>
+        </div>
+
+        <!-- Middle Section: Monthly Overview + BudgetBuddy Tip -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Monthly Overview (Span 2) -->
+          <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-start justify-between mb-5">
+              <div>
+                <h3 class="font-bold text-gray-900 text-base">Monthly overview</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Income compared with expenses</p>
+              </div>
+              <span id="overviewMonthBadge" class="px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 font-semibold text-xs border border-gray-100">
+                Current Month
+              </span>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Income Row -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#0e5b3f]"></span>
+                    <span class="font-medium text-gray-600">Income</span>
+                  </div>
+                  <span id="overviewIncomeAmt" class="font-bold text-gray-900">₱0.00</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div id="overviewIncomeBar" class="bg-[#0e5b3f] h-2 rounded-full progress-bar-fill" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Expenses Row -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#ea580c]"></span>
+                    <span class="font-medium text-gray-600">Expenses</span>
+                  </div>
+                  <span id="overviewExpensesAmt" class="font-bold text-gray-900">₱0.00</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div id="overviewExpenseBar" class="bg-[#ea580c] h-2 rounded-full progress-bar-fill" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-5 pt-4 border-t border-gray-50">
+              Add transactions to build your monthly overview.
+            </p>
+          </div>
+
+          <!-- BudgetBuddy Tip Card (Span 1) -->
+          <div class="tip-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div class="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center text-[#0e5b3f] mb-3">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+              </div>
+              <h4 class="font-bold text-gray-900 text-base mb-2">BudgetBuddy tip</h4>
+              <p id="dashboardTipText" class="text-xs text-gray-600 leading-relaxed">
+                Start by setting category limits and putting a portion of your remaining money toward savings.
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <button onclick="window.app.switchTab('budgetPlanner')" class="text-xs font-bold text-[#0e5b3f] hover:text-[#0a4630] flex items-center gap-1 group">
+                <span>Review your budgets</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom: Recent Transactions (Matching Screenshot) -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="p-6 pb-4 flex items-center justify-between border-b border-gray-50">
+            <div>
+              <h3 class="font-bold text-gray-900 text-base">Recent transactions</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Your latest income and expenses</p>
+            </div>
+            <button onclick="window.app.switchTab('transactions')" class="text-xs font-bold text-[#0e5b3f] hover:text-[#0a4630] flex items-center gap-1">
+              <span>View all</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-gray-50/50">
+                  <th class="py-3 px-4">DESCRIPTION</th>
+                  <th class="py-3 px-4">CATEGORY</th>
+                  <th class="py-3 px-4">DATE</th>
+                  <th class="py-3 px-4">TYPE</th>
+                  <th class="py-3 px-4 text-right">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody id="recentTransactionsBody">
+                <!-- Dynamically populated from database -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. TRANSACTIONS VIEW -->
+      <div id="transactionsView" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-gray-400 tracking-wider uppercase">LEDGER</span>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">All Transactions</h2>
+            <p id="txCountLabel" class="text-sm text-gray-500 mt-1">Manage and track your cash inflows and expenses</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="window.app.exportCSV()" class="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-semibold text-xs shadow-sm hover:bg-gray-50 transition-colors">
+              <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span>Export CSV</span>
+            </button>
+            <button onclick="window.app.openTransactionModal()" class="inline-flex items-center justify-center gap-2 bg-[#0e5b3f] hover:bg-[#0a4630] text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition-all hover:shadow">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+              <span>+ Add transaction</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters Row -->
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div class="relative w-full md:w-80">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input id="txSearchInput" type="text" placeholder="Search by description or category..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <select id="txTypeFilter" class="w-full md:w-44 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+              <option value="all">All Types</option>
+              <option value="income">Income Only (+)</option>
+              <option value="expense">Expenses Only (-)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Full Table -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-gray-50/50">
+                  <th class="py-3.5 px-4">DESCRIPTION</th>
+                  <th class="py-3.5 px-4">CATEGORY</th>
+                  <th class="py-3.5 px-4">DATE</th>
+                  <th class="py-3.5 px-4">TYPE</th>
+                  <th class="py-3.5 px-4 text-right">AMOUNT</th>
+                  <th class="py-3.5 px-4 text-right">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="fullTransactionsBody">
+                <!-- Dynamically populated from database -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. BUDGET PLANNER & SMART RECOMMENDATIONS VIEW -->
+      <div id="budgetPlannerView" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-emerald-700 tracking-wider uppercase bg-emerald-50 px-2.5 py-1 rounded-md">SMART RECOMMENDATIONS</span>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight mt-1">Budget Planner & Recommendations</h2>
+            <p class="text-sm text-gray-500 mt-1">Calculate how much you should spend on groceries, wet markets, dining, and savings.</p>
+          </div>
+
+          <!-- Monthly Base Income Config -->
+          <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="text-xs text-gray-500">
+              <span class="block font-medium">Monthly Income Base:</span>
+              <span id="plannerBaseIncome" class="font-extrabold text-[#0e5b3f] text-base">₱0.00</span>
+            </div>
+            <div class="border-l border-gray-200 pl-3">
+              <label class="text-[10px] text-gray-400 block uppercase font-semibold">Change Target</label>
+              <div class="flex items-center gap-1">
+                <span class="text-xs text-gray-400 currency-symbol">₱</span>
+                <input id="targetIncomeInput" type="number" step="100" min="0" class="w-24 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured Spotlight: Grocery & Market Recommendation Card -->
+        <div class="bg-gradient-to-r from-emerald-900 via-[#0e5b3f] to-emerald-800 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-600/20 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+            <div class="max-w-xl">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/30 text-xs font-medium text-emerald-100 mb-3">
+                <span>🛒</span>
+                <span>Grocery & Wet Market Smart Recommendation</span>
+              </div>
+              <h3 class="text-xl md:text-2xl font-black tracking-tight text-white">Recommended Grocery & Market Allocation</h3>
+              <p class="text-sm text-emerald-100/90 mt-1.5 leading-relaxed">
+                For healthy personal budgeting, groceries and wet market fresh food should make up roughly <strong class="text-white">20% of your total income</strong>. Here are your recommended limits:
+              </p>
+
+              <!-- Breakdown Pills -->
+              <div class="grid grid-cols-3 gap-3 mt-5">
+                <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <span class="text-[11px] text-emerald-200 uppercase font-semibold block">Monthly Limit</span>
+                  <span id="groceryMonthlyRec" class="text-lg font-extrabold text-white">₱0.00</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <span class="text-[11px] text-emerald-200 uppercase font-semibold block">Weekly Target</span>
+                  <span id="groceryWeeklyRec" class="text-lg font-extrabold text-white">₱0.00</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <span class="text-[11px] text-emerald-200 uppercase font-semibold block">Daily Equivalent</span>
+                  <span id="groceryDailyRec" class="text-lg font-extrabold text-white">₱0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress and Live Status -->
+            <div class="bg-white text-gray-800 p-6 rounded-2xl shadow-md lg:w-80 flex-shrink-0">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Spending</span>
+                <span id="groceryStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                  On Track
+                </span>
+              </div>
+              <div class="flex items-baseline justify-between mb-1.5">
+                <span class="text-2xl font-extrabold text-gray-900" id="grocerySpentAmt">₱0.00</span>
+                <span class="text-xs text-gray-400">spent of budget</span>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-3">
+                <div id="groceryProgressBar" class="bg-[#0e5b3f] h-2.5 rounded-full progress-bar-fill" style="width: 0%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <span>Remaining grocery funds:</span>
+                <strong id="groceryRemainingAmt" class="text-emerald-700 font-bold text-sm">₱0.00</strong>
+              </div>
+
+              <button onclick="window.app.openTransactionModal('expense')" class="w-full mt-4 bg-[#0e5b3f] hover:bg-[#0a4630] text-white py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5">
+                <span>+ Log Grocery Expense</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendation Advice Cards -->
+        <div class="space-y-3">
+          <h3 class="font-bold text-gray-900 text-base">Personalized Money Tips</h3>
+          <div id="recommendationTipsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Category Budget Recommendations Grid -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-gray-900 text-base">Recommended Allocations by Category</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Calculated based on standard 50/30/20 & household spending benchmarks</p>
+            </div>
+          </div>
+
+          <div id="budgetCategoryCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. REPORTS & PERIOD ANALYTICS VIEW -->
+      <div id="reportsView" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-[11px] font-bold text-gray-400 tracking-wider uppercase">ANALYTICS & BREAKDOWNS</span>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Everyday, Weekly, Monthly & Yearly</h2>
+            <p class="text-sm text-gray-500 mt-1">Multi-horizon financial calculations to understand your exact burn rate.</p>
+          </div>
+
+          <button onclick="window.print()" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-semibold shadow-sm hover:bg-gray-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            <span>Print Report / PDF</span>
+          </button>
+        </div>
+
+        <!-- 4 Period Cards (Everyday, Weekly, Monthly, Yearly) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Period 1: Everyday (Daily) -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-800 uppercase tracking-wide bg-emerald-50 px-2.5 py-0.5 rounded-full">EVERYDAY</span>
+              <span class="text-[11px] text-gray-400">Today</span>
+            </div>
+            <div id="repDailySpend" class="text-2xl font-extrabold text-gray-900 tracking-tight mt-2">₱0.00</div>
+            <div class="mt-3 space-y-1.5 text-xs text-gray-500 pt-2 border-t border-gray-50">
+              <div class="flex justify-between">
+                <span>Avg Daily Pace:</span>
+                <strong id="repDailyAvg" class="text-gray-800 font-semibold">₱0.00</strong>
+              </div>
+              <div class="flex justify-between">
+                <span>Target Daily Cap:</span>
+                <strong id="repDailyLimit" class="text-emerald-700 font-semibold">₱0.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Period 2: Weekly -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-blue-800 uppercase tracking-wide bg-blue-50 px-2.5 py-0.5 rounded-full">WEEKLY</span>
+              <span class="text-[11px] text-gray-400">This Week</span>
+            </div>
+            <div id="repWeeklySpend" class="text-2xl font-extrabold text-gray-900 tracking-tight mt-2">₱0.00</div>
+            <div class="mt-3 space-y-1.5 text-xs text-gray-500 pt-2 border-t border-gray-50">
+              <div class="flex justify-between">
+                <span>Weekly Cap:</span>
+                <strong id="repWeeklyLimit" class="text-gray-800 font-semibold">₱0.00</strong>
+              </div>
+              <div class="flex justify-between">
+                <span>Net Cashflow:</span>
+                <strong id="repWeeklyNet" class="text-emerald-700 font-semibold">₱0.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Period 3: Monthly -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-purple-800 uppercase tracking-wide bg-purple-50 px-2.5 py-0.5 rounded-full">MONTHLY</span>
+              <span id="repCurrentMonthLabel" class="text-[11px] text-gray-400">This Month</span>
+            </div>
+            <div id="repMonthlyExpense" class="text-2xl font-extrabold text-[#ea580c] tracking-tight mt-2">₱0.00</div>
+            <div class="mt-3 space-y-1.5 text-xs text-gray-500 pt-2 border-t border-gray-50">
+              <div class="flex justify-between">
+                <span>Month Income:</span>
+                <strong id="repMonthlyIncome" class="text-[#0e5b3f] font-semibold">₱0.00</strong>
+              </div>
+              <div class="flex justify-between">
+                <span>Savings Rate:</span>
+                <strong id="repMonthlySavingsRate" class="text-emerald-700 font-semibold">0%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Period 4: Yearly -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-800 uppercase tracking-wide bg-amber-50 px-2.5 py-0.5 rounded-full">YEARLY</span>
+              <span id="repCurrentYearLabel" class="text-[11px] text-gray-400">This Year</span>
+            </div>
+            <div id="repYearlyExpense" class="text-2xl font-extrabold text-gray-900 tracking-tight mt-2">₱0.00</div>
+            <div class="mt-3 space-y-1.5 text-xs text-gray-500 pt-2 border-t border-gray-50">
+              <div class="flex justify-between">
+                <span>Projected Annual:</span>
+                <strong id="repYearlyProjected" class="text-gray-800 font-semibold">₱0.00</strong>
+              </div>
+              <div class="flex justify-between">
+                <span>Net Annual Savings:</span>
+                <strong id="repYearlySavings" class="text-emerald-700 font-semibold">₱0.00</strong>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Visual Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart 1: Income vs Expenses Trends -->
+          <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-bold text-gray-900 text-sm">Income vs Expenses (Monthly)</h4>
+                <p class="text-xs text-gray-400 mt-0.5">Historical comparison of earnings and spend</p>
+              </div>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="incomeExpenseTrendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Spending Donut -->
+          <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-bold text-gray-900 text-sm">Expenses by Category</h4>
+                <p class="text-xs text-gray-400 mt-0.5">Groceries, food, bills, and transit breakdown</p>
+              </div>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="categoryDonutChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Trend Line Chart -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="font-bold text-gray-900 text-sm">7-Day Daily Spending Distribution</h4>
+              <p class="text-xs text-gray-400 mt-0.5">Tracks how much you spend each day of the week</p>
+            </div>
+          </div>
+          <div class="h-56 relative">
+            <canvas id="weeklyTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: ADD TRANSACTION -->
+  <div id="transactionModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop-blur">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-gray-100 overflow-hidden animate-fade-in">
+      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">Add Transaction</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Input money received or an expense you paid</p>
+        </div>
+        <button id="closeTxModalBtn" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="transactionForm" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Transaction Type</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="txType" id="typeExpense" value="expense" checked class="peer sr-only">
+              <div class="py-2.5 text-center rounded-xl border border-gray-200 peer-checked:border-[#ea580c] peer-checked:bg-[#fff4ea] peer-checked:text-[#ea580c] font-semibold text-sm transition-all flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 7L7.8 16.2M7 7v9h9"></path></svg>
+                <span>Expense (-)</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="txType" id="typeIncome" value="income" class="peer sr-only">
+              <div class="py-2.5 text-center rounded-xl border border-gray-200 peer-checked:border-[#0e5b3f] peer-checked:bg-[#eaf6ee] peer-checked:text-[#0e5b3f] font-semibold text-sm transition-all flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17l9.2-9.2M17 17V8H8"></path></svg>
+                <span>Income (+)</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label for="txAmount" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Amount</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-2.5 text-gray-500 font-bold text-sm currency-symbol">₱</span>
+            <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+        </div>
+
+        <div>
+          <label for="txDescription" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Description</label>
+          <input type="text" id="txDescription" placeholder="e.g. Wet Market groceries, Allowance, Electric bill" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="txCategory" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category</label>
+            <select id="txCategory" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+            </select>
+          </div>
+
+          <div>
+            <label for="txDate" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Date</label>
+            <input type="date" id="txDate" required class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+          </div>
+        </div>
+
+        <div>
+          <label for="txNote" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Optional Note</label>
+          <input type="text" id="txNote" placeholder="e.g. Bought fresh fish, vegetables and rice" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#0e5b3f]/20 focus:border-[#0e5b3f]">
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-3 border-t border-gray-100">
+          <button type="button" id="cancelTxModalBtn" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#0e5b3f] hover:bg-[#0a4630] text-white text-xs font-bold shadow-sm transition-all hover:shadow">
+            Save Transaction
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SETTINGS & ACCOUNT -->
+  <div id="profileModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop-blur">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-gray-100 overflow-hidden animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div>
+          <h3 class="text-base font-bold text-gray-900">Settings & Account</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Manage preferences and backup your data</p>
+        </div>
+        <button id="closeProfileModalBtn" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <!-- Section 1: User Profile & Preferences -->
+        <form id="profileForm" class="space-y-4">
+          <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Account Preferences</h4>
+          
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Full Name</label>
+            <input type="text" id="profileNameInput" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Currency</label>
+              <select id="profileCurrencyInput" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold">
+                <option value="₱">₱ - Philippine Peso (PHP)</option>
+                <option value="$">$ - US Dollar (USD)</option>
+                <option value="€">€ - Euro (EUR)</option>
+                <option value="£">£ - British Pound (GBP)</option>
+                <option value="¥">¥ - Japanese Yen (JPY)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Monthly Target Base</label>
+              <input type="number" id="profileTargetInput" step="50" min="0" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-[#0e5b3f] hover:bg-[#0a4630] text-white text-xs font-bold shadow-sm transition-all">
+            Save Preferences
+          </button>
+        </form>
+
+        <hr class="border-gray-100">
+
+        <!-- Section 2: Data Tools -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Personal Data</h4>
+
+          <!-- Backup Download -->
+          <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-200 flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-gray-800 block">Export My Data Backup</span>
+              <span class="text-[11px] text-gray-500">Download complete data as a JSON file</span>
+            </div>
+            <button type="button" onclick="window.app.exportDatabaseBackup()" class="bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition-colors">
+              Download JSON
+            </button>
+          </div>
+
+          <!-- Danger Zone: Clear Data -->
+          <div class="pt-2">
+            <button type="button" onclick="window.app.clearAllTransactions()" class="w-full py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-xs font-semibold transition-colors">
+              Clear All My Transactions (Fresh Start)
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Production App Scripts in Sequence -->
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
